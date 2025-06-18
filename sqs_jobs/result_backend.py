@@ -31,7 +31,7 @@ class MemoryResultBackend(ResultBackend):
             raise KeyError(f"Result for job {job_id} not found")
 
         data = self._store[job_id]
-        
+
         if self.ttl and data["stored_at"]:
             if time.time() - data["stored_at"] > self.ttl:
                 del self._store[job_id]
@@ -57,7 +57,9 @@ class MemoryResultBackend(ResultBackend):
 
 
 class S3ResultBackend(ResultBackend):
-    def __init__(self, s3_client: Any, bucket_name: str, key_prefix: str = "job-results/"):
+    def __init__(
+        self, s3_client: Any, bucket_name: str, key_prefix: str = "job-results/"
+    ):
         self.s3_client = s3_client
         self.bucket_name = bucket_name
         self.key_prefix = key_prefix
@@ -68,7 +70,7 @@ class S3ResultBackend(ResultBackend):
     def store(self, job_id: str, result: Any) -> None:
         serialized_result = serialize(result)
         key = self._get_key(job_id)
-        
+
         self.s3_client.put_object(
             Bucket=self.bucket_name,
             Key=key,
@@ -78,7 +80,7 @@ class S3ResultBackend(ResultBackend):
 
     def get(self, job_id: str) -> Any:
         key = self._get_key(job_id)
-        
+
         try:
             response = self.s3_client.get_object(Bucket=self.bucket_name, Key=key)
             content = response["Body"].read().decode("utf-8")
@@ -88,7 +90,9 @@ class S3ResultBackend(ResultBackend):
 
 
 class RedisResultBackend(ResultBackend):
-    def __init__(self, redis_client: Any, key_prefix: str = "sqs_job:", ttl: Optional[int] = None):
+    def __init__(
+        self, redis_client: Any, key_prefix: str = "sqs_job:", ttl: Optional[int] = None
+    ):
         self.redis_client = redis_client
         self.key_prefix = key_prefix
         self.ttl = ttl
@@ -99,7 +103,7 @@ class RedisResultBackend(ResultBackend):
     def store(self, job_id: str, result: Any) -> None:
         serialized_result = serialize(result)
         key = self._get_key(job_id)
-        
+
         if self.ttl:
             self.redis_client.setex(key, self.ttl, serialized_result)
         else:
@@ -108,11 +112,11 @@ class RedisResultBackend(ResultBackend):
     def get(self, job_id: str) -> Any:
         key = self._get_key(job_id)
         content = self.redis_client.get(key)
-        
+
         if content is None:
             raise KeyError(f"Result for job {job_id} not found")
-        
+
         if isinstance(content, bytes):
             content = content.decode("utf-8")
-        
+
         return deserialize(content)

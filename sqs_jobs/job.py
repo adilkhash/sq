@@ -69,7 +69,7 @@ class Job:
     def get_function(self) -> Callable:
         if not self.function:
             raise ValueError("No function specified for job")
-        
+
         module_name, function_name = self.function.rsplit(".", 1)
         try:
             module = importlib.import_module(module_name)
@@ -89,8 +89,8 @@ def job(timeout: Optional[int] = None):
     def decorator(func: Callable) -> Callable:
         if not inspect.isfunction(func):
             raise TypeError("@job decorator can only be applied to functions")
-        
+
         func._sqs_job_timeout = timeout
         return func
-    
+
     return decorator

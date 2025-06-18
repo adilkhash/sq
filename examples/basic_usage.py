@@ -7,6 +7,7 @@ This demonstrates how to set up queues, enqueue jobs, and process them with work
 import boto3
 from sqs_jobs import Queue, Worker, job
 from sqs_jobs.result_backend import MemoryResultBackend
+import requests
 
 
 @job(timeout=300)
@@ -19,8 +20,8 @@ def add_numbers(x, y):
 @job(timeout=60)
 def multiply_numbers(x, y):
     """Simple multiplication task."""
-    print(f"Multiplying {x} * {y}")
-    return x * y
+    r = requests.get("http://khashtamov.com/").text
+    return r
 
 
 def process_data(data_list):
@@ -32,13 +33,13 @@ def process_data(data_list):
 
 def main():
     # Set up AWS SQS client (you'll need proper AWS credentials)
-    sqs_client = boto3.client('sqs', region_name='eu-central-1')
-    
+    sqs_client = boto3.client("sqs", region_name="eu-central-1")
+
     # Optional: Set up result backend for job results
     result_backend = MemoryResultBackend(ttl=3600)  # 1 hour TTL
-    
+
     # Create a queue
-    queue = Queue('qeueu', sqs_client)
+    queue = Queue("queue-name", sqs_client)
 
     # Enqueue some jobs
     print("Enqueuing jobs...")
@@ -54,25 +55,24 @@ def main():
 
     # Set up worker to process jobs
     print("\nStarting worker...")
-    worker = Worker([queue], sqs_client, num_processes=2, grace_period=30, result_backend=result_backend)
+    worker = Worker(
+        [queue],
+        sqs_client,
+        num_processes=2,
+        grace_period=30,
+        result_backend=result_backend,
+    )
 
     # In a real application, you would call worker.work() to start processing
 
     print("Jobs enqueued successfully!")
     print("To process jobs, run the worker with worker.work()")
 
-    # Example of getting job results (if result backend is configured)
-    if result_backend:
-        try:
-            # Note: In real usage, you'd need to wait for the job to complete
-            # or poll for results
-            result = result_backend.get(job1.job_id)
-            print(f"Job {job1.job_id} result: {result}")
-        except KeyboardInterrupt:
-            print("\nShutting down...")
-            worker.shutdown()
-        except RuntimeError as e:
-            print(f"Could not get result: {e}")
+    try:
+        worker.work()
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+        worker.shutdown()
 
 
 if __name__ == "__main__":

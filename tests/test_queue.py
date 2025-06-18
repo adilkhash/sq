@@ -31,11 +31,14 @@ class TestQueue:
     def test_get_existing_queue_url(self):
         url = self.queue.queue_url
         assert url == "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
-        self.mock_sqs_client.get_queue_url.assert_called_once_with(QueueName="test-queue")
+        self.mock_sqs_client.get_queue_url.assert_called_once_with(
+            QueueName="test-queue"
+        )
 
     def test_create_queue_when_not_exists(self):
         self.mock_sqs_client.get_queue_url.side_effect = ClientError(
-            {"Error": {"Code": "AWS.SimpleQueueService.NonExistentQueue"}}, "GetQueueUrl"
+            {"Error": {"Code": "AWS.SimpleQueueService.NonExistentQueue"}},
+            "GetQueueUrl",
         )
         self.mock_sqs_client.create_queue.return_value = {
             "QueueUrl": "https://sqs.us-east-1.amazonaws.com/123456789012/new-queue"
@@ -48,7 +51,8 @@ class TestQueue:
     def test_create_fifo_queue(self):
         fifo_queue = Queue("test-fifo", self.mock_sqs_client, queue_type="fifo")
         self.mock_sqs_client.get_queue_url.side_effect = ClientError(
-            {"Error": {"Code": "AWS.SimpleQueueService.NonExistentQueue"}}, "GetQueueUrl"
+            {"Error": {"Code": "AWS.SimpleQueueService.NonExistentQueue"}},
+            "GetQueueUrl",
         )
         self.mock_sqs_client.create_queue.return_value = {
             "QueueUrl": "https://sqs.us-east-1.amazonaws.com/123456789012/test-fifo.fifo"
@@ -72,7 +76,7 @@ class TestQueue:
         assert job.function == "tests.test_queue.sample_task"
         assert job.args == [1, 2]
         assert job.kwargs == {}
-        
+
         self.mock_sqs_client.send_message.assert_called_once()
         call_args = self.mock_sqs_client.send_message.call_args[1]
         assert "QueueUrl" in call_args

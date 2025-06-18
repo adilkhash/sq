@@ -24,7 +24,7 @@ class TestJob:
     def test_job_to_dict(self):
         j = Job.create(sample_function, [1, 2], {"z": 3})
         data = j.to_dict()
-        
+
         expected_keys = {"job_id", "function", "args", "kwargs", "enqueued_at"}
         assert set(data.keys()) == expected_keys
         assert data["function"] == "tests.test_job.sample_function"
@@ -35,7 +35,7 @@ class TestJob:
         original = Job.create(sample_function, [1, 2], {"z": 3})
         data = original.to_dict()
         reconstructed = Job.from_dict(data)
-        
+
         assert reconstructed.job_id == original.job_id
         assert reconstructed.function == original.function
         assert reconstructed.args == original.args
@@ -46,7 +46,7 @@ class TestJob:
         original = Job.create(sample_function, [1, 2], {"z": 3})
         json_data = original.to_json()
         reconstructed = Job.from_json(json_data)
-        
+
         assert reconstructed.job_id == original.job_id
         assert reconstructed.function == original.function
         assert reconstructed.args == original.args
@@ -71,12 +71,13 @@ class TestJob:
     def test_job_decorator(self):
         assert hasattr(decorated_function, "_sqs_job_timeout")
         assert decorated_function._sqs_job_timeout == 300
-        
+
         result = decorated_function(3, 4)
         assert result == 12
 
     def test_job_decorator_invalid_target(self):
         with pytest.raises(TypeError):
+
             @job()
             class SomeClass:
                 pass

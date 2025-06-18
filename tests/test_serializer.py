@@ -14,7 +14,7 @@ class TestSerializer:
             "bool": True,
             "none": None,
             "list": [1, 2, 3],
-            "dict": {"nested": "value"}
+            "dict": {"nested": "value"},
         }
         serialized = serialize(data)
         deserialized = deserialize(serialized)
@@ -84,8 +84,8 @@ class TestSerializer:
                 "tags": {"important", "urgent"},
                 "coordinates": [40.7128, -74.0060],
                 "price": Decimal("99.99"),
-                "binary_data": b"secret"
-            }
+                "binary_data": b"secret",
+            },
         }
         serialized = serialize(data)
         deserialized = deserialize(serialized)

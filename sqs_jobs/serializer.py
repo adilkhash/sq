@@ -30,10 +30,10 @@ class SQSJobsEncoder(json.JSONEncoder):
 def _decode_object(obj: dict) -> Any:
     if "__type__" not in obj:
         return obj
-    
+
     obj_type = obj["__type__"]
     value = obj["value"]
-    
+
     if obj_type == "datetime":
         return datetime.fromisoformat(value)
     elif obj_type == "date":
@@ -50,7 +50,7 @@ def _decode_object(obj: dict) -> Any:
         return set(value)
     elif obj_type == "tuple":
         return tuple(value)
-    
+
     return obj
 
 

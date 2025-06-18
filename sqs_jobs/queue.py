@@ -52,11 +52,7 @@ class Queue:
         return response["QueueUrl"]
 
     def enqueue(
-        self,
-        func: Callable,
-        *args,
-        timeout: Optional[int] = None,
-        **kwargs
+        self, func: Callable, *args, timeout: Optional[int] = None, **kwargs
     ) -> Job:
         job_timeout = timeout
 
@@ -105,9 +101,11 @@ class Queue:
             except ClientError as e:
                 if attempt == max_retries - 1:
                     raise
-                time.sleep(retry_delay * (2 ** attempt))
+                time.sleep(retry_delay * (2**attempt))
 
-    def receive_jobs(self, max_messages: int = 1, wait_time: int = 20) -> List[Dict[str, Any]]:
+    def receive_jobs(
+        self, max_messages: int = 1, wait_time: int = 20
+    ) -> List[Dict[str, Any]]:
         try:
             response = self.sqs_client.receive_message(
                 QueueUrl=self.queue_url,
