@@ -82,7 +82,7 @@ class TestSerializer:
             "created_at": datetime.now(),
             "metadata": {
                 "tags": {"important", "urgent"},
-                "coordinates": (40.7128, -74.0060),
+                "coordinates": [40.7128, -74.0060],
                 "price": Decimal("99.99"),
                 "binary_data": b"secret"
             }

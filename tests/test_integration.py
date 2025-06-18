@@ -1,5 +1,6 @@
 import pytest
 import time
+import unittest
 from unittest.mock import Mock, patch
 from moto import mock_aws
 import boto3
@@ -24,8 +25,8 @@ def divide_numbers(x, y):
 
 
 @mock_aws
-class TestIntegration:
-    def setup_method(self):
+class TestIntegration(unittest.TestCase):
+    def setUp(self):
         self.sqs_client = boto3.client("sqs", region_name="us-east-1")
         self.result_backend = MemoryResultBackend(ttl=3600)
 
