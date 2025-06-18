@@ -12,7 +12,7 @@ from .job import Job
 logger = logging.getLogger(__name__)
 
 
-def _execute_job_with_timeout(job_data: Dict[str, Any], timeout: Optional[int] = None) -> Any:
+def _execute_job_with_timeout(job_data: Dict[str, Any], timeout: Optional[int] = None, result_backend: Optional[Any] = None) -> Any:
     try:
         job = Job.from_dict(job_data)
         
@@ -25,6 +25,8 @@ def _execute_job_with_timeout(job_data: Dict[str, Any], timeout: Optional[int] =
         
         try:
             result = job.execute()
+            if result_backend:
+                result_backend.store(job.job_id, result)
             return {"success": True, "result": result, "job_id": job.job_id}
         finally:
             if timeout:
@@ -46,11 +48,13 @@ class Worker:
         sqs_client: Any,
         num_processes: Optional[int] = None,
         grace_period: int = 30,
+        result_backend: Optional[Any] = None,
     ):
         self.queues = queues
         self.sqs_client = sqs_client
         self.num_processes = num_processes or mp.cpu_count()
         self.grace_period = grace_period
+        self.result_backend = result_backend
         self._should_stop = False
         self._executor = None
         self._active_jobs = {}
@@ -103,7 +107,7 @@ class Worker:
                 receipt_handle = message["ReceiptHandle"]
                 timeout = job_data.get("timeout")
                 
-                future = self._executor.submit(_execute_job_with_timeout, job_data, timeout)
+                future = self._executor.submit(_execute_job_with_timeout, job_data, timeout, self.result_backend)
                 self._active_jobs[future] = {
                     "queue": queue,
                     "receipt_handle": receipt_handle,

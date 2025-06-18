@@ -1,7 +1,7 @@
 import uuid
 import importlib
 import inspect
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Callable
 from .serializer import serialize, deserialize
 
@@ -15,15 +15,13 @@ class Job:
         kwargs: Optional[Dict[str, Any]] = None,
         enqueued_at: Optional[datetime] = None,
         timeout: Optional[int] = None,
-        result_backend: Optional[Any] = None,
     ):
         self.job_id = job_id or str(uuid.uuid4())
         self.function = function
         self.args = args or []
         self.kwargs = kwargs or {}
-        self.enqueued_at = enqueued_at or datetime.now(timezone.utc)
+        self.enqueued_at = enqueued_at or datetime.utcnow()
         self.timeout = timeout
-        self.result_backend = result_backend
 
     @classmethod
     def create(
@@ -32,7 +30,6 @@ class Job:
         args: Optional[List[Any]] = None,
         kwargs: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
-        result_backend: Optional[Any] = None,
     ) -> "Job":
         function_name = f"{func.__module__}.{func.__name__}"
         return cls(
@@ -40,7 +37,6 @@ class Job:
             args=args or [],
             kwargs=kwargs or {},
             timeout=timeout,
-            result_backend=result_backend,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -83,29 +79,18 @@ class Job:
 
     def execute(self) -> Any:
         func = self.get_function()
-        result = func(*self.args, **self.kwargs)
-        
-        if self.result_backend:
-            self.result_backend.store(self.job_id, result)
-        
-        return result
-
-    def get_result(self) -> Any:
-        if not self.result_backend:
-            raise RuntimeError("No result backend configured for this job")
-        return self.result_backend.get(self.job_id)
+        return func(*self.args, **self.kwargs)
 
     def __repr__(self) -> str:
         return f"Job(id={self.job_id}, function={self.function})"
 
 
-def job(timeout: Optional[int] = None, result_backend: Optional[Any] = None):
+def job(timeout: Optional[int] = None):
     def decorator(func: Callable) -> Callable:
         if not inspect.isfunction(func):
             raise TypeError("@job decorator can only be applied to functions")
         
         func._sqs_job_timeout = timeout
-        func._sqs_job_result_backend = result_backend
         return func
     
     return decorator

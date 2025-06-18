@@ -31,7 +31,7 @@ class TestIntegration(unittest.TestCase):
         self.result_backend = MemoryResultBackend(ttl=3600)
 
     def test_basic_job_flow(self):
-        queue = Queue("test-queue", self.sqs_client, result_backend=self.result_backend)
+        queue = Queue("test-queue", self.sqs_client)
         
         job = queue.enqueue(add_numbers, 5, 3)
         assert job.job_id is not None
@@ -71,11 +71,12 @@ class TestIntegration(unittest.TestCase):
 
     def test_worker_initialization(self):
         queue = Queue("test-queue", self.sqs_client)
-        worker = Worker([queue], self.sqs_client, num_processes=4, grace_period=60)
+        worker = Worker([queue], self.sqs_client, num_processes=4, grace_period=60, result_backend=self.result_backend)
         
         assert len(worker.queues) == 1
         assert worker.num_processes == 4
         assert worker.grace_period == 60
+        assert worker.result_backend == self.result_backend
 
     def test_multiple_queues_worker(self):
         queue1 = Queue("queue1", self.sqs_client)
@@ -99,7 +100,7 @@ class TestIntegration(unittest.TestCase):
         mock_executor_class.assert_called_once()
 
     def test_result_backend_integration(self):
-        queue = Queue("test-queue", self.sqs_client, result_backend=self.result_backend)
+        queue = Queue("test-queue", self.sqs_client)
         
         job = queue.enqueue(add_numbers, 7, 3)
         
@@ -112,10 +113,13 @@ class TestIntegration(unittest.TestCase):
     def test_job_result_storage(self):
         from sqs_jobs.job import Job
         
-        job = Job.create(add_numbers, [5, 5], result_backend=self.result_backend)
+        job = Job.create(add_numbers, [5, 5])
         result = job.execute()
         
         assert result == 10
+        
+        # Result storage is now handled by the worker
+        self.result_backend.store(job.job_id, result)
         assert self.result_backend.get(job.job_id) == 10
 
     def test_error_handling_in_job_execution(self):

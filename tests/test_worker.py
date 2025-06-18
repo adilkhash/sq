@@ -30,6 +30,19 @@ class TestWorkerJobExecutor:
         assert result["result"] == 3
         assert result["job_id"] == job.job_id
 
+    def test_execute_job_with_result_backend(self):
+        from sqs_jobs.result_backend import MemoryResultBackend
+        
+        result_backend = MemoryResultBackend()
+        job = Job.create(sample_task, [1, 2])
+        job_data = job.to_dict()
+        
+        result = _execute_job_with_timeout(job_data, result_backend=result_backend)
+        
+        assert result["success"] is True
+        assert result["result"] == 3
+        assert result_backend.get(job.job_id) == 3
+
     def test_execute_job_with_timeout_failure(self):
         job = Job.create(failing_task)
         job_data = job.to_dict()
@@ -67,11 +80,19 @@ class TestWorker:
         assert self.worker.sqs_client == self.mock_sqs_client
         assert self.worker.num_processes == 2
         assert self.worker.grace_period == 30
+        assert self.worker.result_backend is None
         assert self.worker._should_stop is False
 
     def test_worker_default_num_processes(self):
         worker = Worker([self.mock_queue], self.mock_sqs_client)
         assert worker.num_processes > 0
+
+    def test_worker_with_result_backend(self):
+        from sqs_jobs.result_backend import MemoryResultBackend
+        
+        result_backend = MemoryResultBackend()
+        worker = Worker([self.mock_queue], self.mock_sqs_client, result_backend=result_backend)
+        assert worker.result_backend == result_backend
 
     @patch("sqs_jobs.worker.ProcessPoolExecutor")
     @patch("sqs_jobs.worker.time.sleep")

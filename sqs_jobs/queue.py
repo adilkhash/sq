@@ -11,13 +11,11 @@ class Queue:
         sqs_client: Any,
         queue_type: str = "standard",
         visibility_timeout: int = 1800,
-        result_backend: Optional[Any] = None,
     ):
         self.name = name
         self.sqs_client = sqs_client
         self.queue_type = queue_type
         self.visibility_timeout = visibility_timeout
-        self.result_backend = result_backend
         self._queue_url = None
 
     @property
@@ -58,23 +56,18 @@ class Queue:
         func: Callable,
         *args,
         timeout: Optional[int] = None,
-        result_backend: Optional[Any] = None,
         **kwargs
     ) -> Job:
         job_timeout = timeout
-        job_result_backend = result_backend or self.result_backend
 
         if hasattr(func, "_sqs_job_timeout") and job_timeout is None:
             job_timeout = func._sqs_job_timeout
-        if hasattr(func, "_sqs_job_result_backend") and job_result_backend is None:
-            job_result_backend = func._sqs_job_result_backend
 
         job = Job.create(
             func=func,
             args=list(args),
             kwargs=kwargs,
             timeout=job_timeout,
-            result_backend=job_result_backend,
         )
 
         self._send_job(job)
