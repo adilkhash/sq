@@ -62,8 +62,7 @@ fifo_queue = Queue('my-fifo-queue', sqs_client, queue_type='fifo')
 queue = Queue(
     'my-queue',
     sqs_client,
-    visibility_timeout=1800,  # 30 minutes
-    result_backend=result_backend
+    visibility_timeout=1800  # 30 minutes
 )
 ```
 
@@ -82,7 +81,8 @@ worker = Worker(
     [queue1, queue2],
     sqs_client,
     num_processes=4,      # Number of worker processes
-    grace_period=60       # Shutdown grace period in seconds
+    grace_period=60,      # Shutdown grace period in seconds
+    result_backend=result_backend  # Optional result storage
 )
 
 # Start processing
@@ -144,7 +144,7 @@ SQS Jobs supports pluggable result storage backends.
 from sqs_jobs.result_backend import MemoryResultBackend
 
 backend = MemoryResultBackend(ttl=3600)  # 1 hour TTL
-queue = Queue('my-queue', sqs_client, result_backend=backend)
+worker = Worker([queue], sqs_client, result_backend=backend)
 ```
 
 ### S3 Backend
@@ -154,7 +154,7 @@ from sqs_jobs.result_backend import S3ResultBackend
 
 s3_client = boto3.client('s3')
 backend = S3ResultBackend(s3_client, 'my-results-bucket')
-queue = Queue('my-queue', sqs_client, result_backend=backend)
+worker = Worker([queue], sqs_client, result_backend=backend)
 ```
 
 ### Redis Backend
@@ -165,7 +165,7 @@ import redis
 
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
 backend = RedisResultBackend(redis_client, ttl=3600)
-queue = Queue('my-queue', sqs_client, result_backend=backend)
+worker = Worker([queue], sqs_client, result_backend=backend)
 ```
 
 ### Custom Backend
@@ -236,7 +236,8 @@ worker = Worker(
     queues=[queue1, queue2],
     sqs_client=sqs_client,
     num_processes=4,      # Number of worker processes
-    grace_period=30       # Graceful shutdown timeout
+    grace_period=30,      # Graceful shutdown timeout
+    result_backend=backend  # Optional result storage
 )
 ```
 

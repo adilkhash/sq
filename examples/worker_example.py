@@ -30,16 +30,17 @@ def main():
     result_backend = MemoryResultBackend(ttl=3600)
     
     # Create multiple queues to process
-    high_priority_queue = Queue('high-priority', sqs_client, result_backend=result_backend)
-    normal_queue = Queue('normal-jobs', sqs_client, result_backend=result_backend)
-    batch_queue = Queue('batch-processing', sqs_client, result_backend=result_backend)
+    high_priority_queue = Queue('high-priority', sqs_client)
+    normal_queue = Queue('normal-jobs', sqs_client)
+    batch_queue = Queue('batch-processing', sqs_client)
     
     # Create worker with multiple queues
     worker = Worker(
         queues=[high_priority_queue, normal_queue, batch_queue],
         sqs_client=sqs_client,
         num_processes=4,  # Use 4 worker processes
-        grace_period=60   # Wait up to 60 seconds for jobs to complete during shutdown
+        grace_period=60,  # Wait up to 60 seconds for jobs to complete during shutdown
+        result_backend=result_backend
     )
     
     # Set up signal handlers for graceful shutdown
